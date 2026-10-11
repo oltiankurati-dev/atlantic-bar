@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getAdminSession } from "@/lib/adminAuth";
 import { getDb } from "@/lib/firebaseAdmin";
 import { DEFAULT_ITEMS, type MenuCategory } from "@/lib/defaultMenu";
+import { isSafeDocId, menuItemSchema } from "@/lib/validation";
 
 const CATEGORIES: MenuCategory[] = [
   "signature",
@@ -22,17 +23,15 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { id } = await params;
-  const body = await req.json().catch(() => null);
-  const category = body?.category;
-  const name = String(body?.name ?? "").trim();
-  const note = String(body?.note ?? "").trim();
-  const price = String(body?.price ?? "").trim();
-  const imageUrl = String(body?.imageUrl ?? "").trim();
-  const order = Number(body?.order ?? 0);
-
-  if (!CATEGORIES.includes(category) || !name || !note || !price || !imageUrl || !Number.isInteger(order)) {
-    return NextResponse.json({ error: "Please complete all menu fields." }, { status: 400 });
+  if (!isSafeDocId(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  const parsed = menuItemSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Please complete all menu fields." },
+      { status: 400 }
+    );
   }
+  const { category, name, note, price, imageUrl, order } = parsed.data;
 
   await getDb().collection("menuItems").doc(id).set(
     {
@@ -60,6 +59,7 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { id } = await params;
+  if (!isSafeDocId(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const isDefault = CATEGORIES.some((category) =>
     DEFAULT_ITEMS[category].some((item) => {
       const slug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");

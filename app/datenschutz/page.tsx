@@ -33,8 +33,8 @@ export default function DatenschutzPage() {
               </>
             ) : (
               <>
-                This draft describes the site's actual technical data processing (as of
-                when this page was written). The controller's contact details are still
+                This draft describes the site&apos;s actual technical data processing (as of
+                when this page was written). The controller&apos;s contact details are still
                 marked as placeholders on the{" "}
                 <Link href="/impressum" className="text-gold-bright underline hover:text-cream">
                   Legal Notice
@@ -175,8 +175,8 @@ export default function DatenschutzPage() {
               </h2>
               <p>
                 {isDe
-                  ? "Sofern von uns aktiviert, wird bei einer neuen Reservierungsanfrage eine Benachrichtigung über den E-Mail-Dienst Resend an unser internes Postfach gesendet. Diese E-Mail enthält Name, Datum, Gästeanzahl und die Reservierungs-ID."
-                  : "If enabled on our end, a notification about each new reservation request is sent to our internal inbox via the Resend email service. This email contains the name, date, guest count, and reservation ID."}
+                  ? "E-Mails werden über Google Gmail (Google Ireland Ltd. / Google LLC) versendet. Bei einer neuen Reservierungsanfrage und bei jeder Statusänderung erhält unser internes Postfach eine Benachrichtigung mit Name, Datum, Gästeanzahl und Reservierungs-ID. Ist die E-Mail-Adresse Ihres Kontos bestätigt, erhalten Sie zusätzlich eine Eingangsbestätigung mit Name, Datum und Gästeanzahl."
+                  : "Emails are sent via Google Gmail (Google Ireland Ltd. / Google LLC). For each new reservation request and each status change, our internal inbox receives a notification containing the name, date, guest count, and reservation ID. If your account's email address is verified, you also receive a confirmation of receipt containing the name, date, and guest count."}
               </p>
             </div>
 
@@ -198,7 +198,7 @@ export default function DatenschutzPage() {
               <ul className="list-disc pl-5 space-y-1.5">
                 <li>Google / Firebase (Google Ireland Ltd. / Google LLC) — {isDe ? "Authentifizierung, Datenbank, reCAPTCHA" : "authentication, database, reCAPTCHA"}</li>
                 <li>Cloudinary Ltd. — {isDe ? "Bildspeicherung und -auslieferung" : "image storage and delivery"}</li>
-                <li>Resend, Inc. — {isDe ? "Versand von Reservierungs-Benachrichtigungen (falls aktiviert)" : "sending reservation notification emails (if enabled)"}</li>
+                <li>Google Gmail (Google Ireland Ltd. / Google LLC) — {isDe ? "Versand von Reservierungs-E-Mails" : "sending reservation emails"}</li>
                 <li>{isDe ? "unser Hosting-Anbieter" : "our hosting provider"} — {isDe ? "Bereitstellung der Website" : "serving the website"}</li>
               </ul>
               <p className="mt-3">

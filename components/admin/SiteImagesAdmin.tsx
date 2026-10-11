@@ -14,15 +14,14 @@ export default function SiteImagesAdmin() {
   const [uploading, setUploading] = useState<SiteImageKey | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
-    const res = await fetch("/api/admin/images", { cache: "no-store" });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? t.admin.images.loadError);
-    setImages({ ...SITE_IMAGE_DEFAULTS, ...data.images });
-  }
-
   useEffect(() => {
-    load().catch((err) => setError(err.message));
+    fetch("/api/admin/images", { cache: "no-store" })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? t.admin.images.loadError);
+        setImages({ ...SITE_IMAGE_DEFAULTS, ...data.images });
+      })
+      .catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch once on mount only
   }, []);
 

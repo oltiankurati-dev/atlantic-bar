@@ -32,7 +32,6 @@ export default function GalleryAdmin() {
   const [uploadingImage, setUploadingImage] = useState(false);
 
   async function load() {
-    setLoading(true);
     try {
       const res = await fetch("/api/admin/gallery", { cache: "no-store" });
       const data = await res.json();

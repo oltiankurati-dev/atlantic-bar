@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getAdminSession } from "@/lib/adminAuth";
 import { getDb } from "@/lib/firebaseAdmin";
 import { DEFAULT_ITEMS, type MenuCategory } from "@/lib/defaultMenu";
+import { menuItemSchema } from "@/lib/validation";
 
 type MenuOverride = Record<string, unknown> & { id: string };
 
@@ -64,10 +65,6 @@ async function getMergedItems() {
   return items;
 }
 
-function validCategory(value: unknown): value is MenuCategory {
-  return typeof value === "string" && CATEGORIES.includes(value as MenuCategory);
-}
-
 export async function GET() {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -78,17 +75,14 @@ export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
-  const body = await req.json().catch(() => null);
-  const category = body?.category;
-  const name = String(body?.name ?? "").trim();
-  const note = String(body?.note ?? "").trim();
-  const price = String(body?.price ?? "").trim();
-  const imageUrl = String(body?.imageUrl ?? "").trim();
-  const order = Number(body?.order ?? 0);
-
-  if (!validCategory(category) || !name || !note || !price || !imageUrl || !Number.isInteger(order)) {
-    return NextResponse.json({ error: "Please complete all menu fields." }, { status: 400 });
+  const parsed = menuItemSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Please complete all menu fields." },
+      { status: 400 }
+    );
   }
+  const { category, name, note, price, imageUrl, order } = parsed.data;
 
   const id = makeId(category, name);
   await getDb().collection("menuItems").doc(id).set(

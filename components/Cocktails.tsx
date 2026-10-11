@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { PHOTOS } from "@/lib/images";
-import { useSiteImages } from "@/app/context/SiteImagesContext";
 import SectionHeading from "./SectionHeading";
 import { useLanguage } from "@/app/context/LanguageContext";
 import Link from "next/link";

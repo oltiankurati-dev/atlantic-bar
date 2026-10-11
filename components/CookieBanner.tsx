@@ -1,22 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 const STORAGE_KEY = "atlantic-cookie-notice-seen";
 
+function subscribeNever() {
+  return () => {};
+}
+
+function readAccepted() {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export default function CookieBanner() {
   const { t } = useLanguage();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (window.localStorage.getItem(STORAGE_KEY) !== "1") setVisible(true);
-    } catch {
-      setVisible(true);
-    }
-  }, []);
+  // Server render and hydration assume "already accepted" so the banner never
+  // flashes or mismatches; the real value is read from storage on the client.
+  const storedAccepted = useSyncExternalStore(subscribeNever, readAccepted, () => true);
+  const [acceptedNow, setAcceptedNow] = useState(false);
+  const visible = !storedAccepted && !acceptedNow;
 
   function accept() {
     try {
@@ -24,7 +32,7 @@ export default function CookieBanner() {
     } catch {
       // private browsing / storage disabled — banner just won't persist
     }
-    setVisible(false);
+    setAcceptedNow(true);
   }
 
   if (!visible) return null;

@@ -37,8 +37,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const res = await fetch("/api/me", { cache: "no-store" });
-      const data = await res.json();
+      const loadMe = async () => (await fetch("/api/me", { cache: "no-store" })).json();
+      let data = await loadMe();
+
+      // Firebase keeps the browser signed in indefinitely, but the server's
+      // session cookie expires after 5 days. Re-issue it from a fresh ID token
+      // so returning users (and admins) don't silently lose server access.
+      const currentUser = getClientAuth().currentUser;
+      if (!data.user && currentUser) {
+        const idToken = await currentUser.getIdToken();
+        const res = await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+        if (res.ok) data = await loadMe();
+      }
+
       setProfile(
         data.user ? { role: data.user.role, phoneVerified: data.user.phoneVerified } : null
       );

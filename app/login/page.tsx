@@ -17,8 +17,8 @@ type Dict = (typeof translations)["de"];
 
 function friendlyAuthError(err: unknown, t: Dict): string {
   const code = err instanceof Error && "code" in err ? String((err as { code: unknown }).code) : "";
-  // eslint-disable-next-line no-console -- the mapped message shown to the
-  // user is deliberately generic; the real code/message only goes to devtools
+  // The mapped message shown to the user is deliberately generic; the real
+  // code/message only goes to devtools.
   console.error("Auth error:", code || err);
   switch (code) {
     case "auth/email-already-in-use":
@@ -61,15 +61,14 @@ export default function CustomerLoginPage() {
 
     if (!res.ok) {
       const body = await res.json().catch(() => null);
-      // eslint-disable-next-line no-console -- deliberate diagnostic for a
-      // failure class that's otherwise invisible to the signed-in user
+      // Deliberate diagnostic for a failure class that's otherwise invisible
+      // to the signed-in user.
       console.error("Session sync failed:", res.status, body?.error);
       const syncError = new Error(t.login.errorSyncFailed) as Error & { code?: string };
       syncError.code = "sync-failed";
       throw syncError;
     }
 
-    const data: { role: "user" | "admin"; phoneVerified: boolean } = await res.json();
     router.push("/#reserve");
     router.refresh();
   }

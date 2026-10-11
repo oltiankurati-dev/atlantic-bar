@@ -16,6 +16,12 @@ export default function Reservation() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // YYYY-MM-DD in the guest's own timezone, for the date picker's lower bound.
+  const now = new Date();
+  const todayLocal = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
+
   const FIELDS: { key: "name" | "date" | "guests"; label: string }[] = [
     { key: "name", label: t.reservation.fields.name },
     { key: "date", label: t.reservation.fields.date },
@@ -133,7 +139,9 @@ export default function Reservation() {
                   name={f.key}
                   required
                   type={f.key === "date" ? "date" : f.key === "guests" ? "number" : "text"}
-                  min={f.key === "guests" ? 1 : undefined}
+                  min={f.key === "guests" ? 1 : f.key === "date" ? todayLocal : undefined}
+                  max={f.key === "guests" ? 50 : undefined}
+                  maxLength={f.key === "name" ? 100 : undefined}
                   placeholder={f.key === "name" ? t.reservation.namePlaceholder : undefined}
                   className="mt-2 w-full bg-transparent border-b border-cream/25 focus:border-gold py-2 text-cream outline-none transition-colors placeholder:text-smoke/50"
                 />

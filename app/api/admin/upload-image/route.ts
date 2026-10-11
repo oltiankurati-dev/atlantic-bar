@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
-  const form = await req.formData();
+  const form = await req.formData().catch(() => null);
+  if (!form) return NextResponse.json({ error: "Invalid upload." }, { status: 400 });
   const file = form.get("file");
   const folder = String(form.get("folder") ?? "uploads").replace(/[^a-z0-9_-]/gi, "");
 

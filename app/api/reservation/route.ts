@@ -12,13 +12,37 @@ import { getMailer, getMailFrom, isMailerConfigured } from "@/lib/mailer";
 const recentSubmissionsByIp = new Map<string, number>();
 const recentSubmissionsByUid = new Map<string, number>();
 const RATE_LIMIT_WINDOW_MS = 60_000;
+const MAX_BOOKING_AHEAD_DAYS = 365;
+
+// Drop expired entries so the maps can't grow without bound on a
+// long-lived server instance.
+function pruneExpired(map: Map<string, number>) {
+  const cutoff = Date.now() - RATE_LIMIT_WINDOW_MS;
+  for (const [key, time] of map) {
+    if (time < cutoff) map.delete(key);
+  }
+}
+
+// <input type="date"> always submits YYYY-MM-DD. Allow "yesterday" as slack
+// for guests in a timezone behind the server's UTC clock.
+function isBookableDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const day = Date.parse(`${value}T00:00:00Z`);
+  if (Number.isNaN(day) || new Date(day).toISOString().slice(0, 10) !== value) return false;
+  const todayUtc = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  const dayMs = 24 * 60 * 60 * 1000;
+  return day >= todayUtc - dayMs && day <= todayUtc + MAX_BOOKING_AHEAD_DAYS * dayMs;
+}
 
 const ReservationSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(100),
-  date: z
+  // No control characters — the name ends up in email subjects and bodies.
+  name: z
     .string()
     .trim()
-    .refine((val) => !Number.isNaN(Date.parse(val)), "Invalid date"),
+    .min(1, "Name is required")
+    .max(100)
+    .regex(/^[^\p{Cc}]+$/u, "Invalid name"),
+  date: z.string().trim().refine(isBookableDate, "Please choose a date within the next year."),
   guests: z.coerce.number().int().min(1).max(50),
   // honeypot field — real users never fill this in
   company: z.string().max(0).optional().default(""),
@@ -88,6 +112,9 @@ export async function POST(req: NextRequest) {
       { status: 403 }
     );
   }
+
+  pruneExpired(recentSubmissionsByUid);
+  pruneExpired(recentSubmissionsByIp);
 
   const lastSubmitByUid = recentSubmissionsByUid.get(decoded.uid);
   if (lastSubmitByUid && Date.now() - lastSubmitByUid < RATE_LIMIT_WINDOW_MS) {
@@ -160,7 +187,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (mailerReady && decoded.email) {
+    // Only email addresses the account has proven it owns — otherwise anyone
+    // could sign up with a stranger's address and use this route to send
+    // them mail from the bar's Gmail account.
+    if (mailerReady && decoded.email && decoded.email_verified === true) {
       try {
         const copy = CUSTOMER_EMAIL_COPY[locale];
         await getMailer().sendMail({

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAdminSession } from "@/lib/adminAuth";
 import { getDb } from "@/lib/firebaseAdmin";
 import { getMailer, getMailFrom, isMailerConfigured } from "@/lib/mailer";
+import { isSafeDocId } from "@/lib/validation";
 
 const StatusSchema = z.object({
   status: z.enum(["pending", "confirmed", "cancelled", "waitlist"]),
@@ -23,6 +24,7 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { id } = await params;
+  if (!isSafeDocId(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const body = await req.json().catch(() => null);
   const parsed = StatusSchema.safeParse(body);
   if (!parsed.success) {
@@ -32,12 +34,15 @@ export async function PATCH(
   const status = parsed.data.status;
   const docRef = getDb().collection("reservations").doc(id);
   const snapshot = await docRef.get();
+  if (!snapshot.exists) {
+    return NextResponse.json({ error: "Reservation not found." }, { status: 404 });
+  }
   await docRef.update({ status });
 
   // Notify the admin inbox of every status change — non-fatal if it fails,
   // the status update itself already succeeded.
   const notifyEmail = process.env.RESERVATION_NOTIFY_EMAIL;
-  if (isMailerConfigured() && notifyEmail && snapshot.exists) {
+  if (isMailerConfigured() && notifyEmail) {
     const data = snapshot.data() ?? {};
     try {
       await getMailer().sendMail({
@@ -69,6 +74,7 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { id } = await params;
+  if (!isSafeDocId(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
   await getDb().collection("reservations").doc(id).delete();
   return NextResponse.json({ ok: true });
 }

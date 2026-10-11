@@ -23,9 +23,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("de");
   const [ready, setReady] = useState(false);
 
+  // Locale lives in localStorage, which only exists after hydration — the
+  // server always renders "de", then this syncs once on mount.
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved === "en") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from browser storage
       setLocaleState("en");
       document.documentElement.lang = "en";
     } else {

@@ -8,7 +8,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 const NAV_LINKS = ["about", "cocktails", "gallery", "nights", "menu", "spielzeug"] as const;
-const ALL_LINK_KEYS = [...NAV_LINKS, "reserve"] as const;
+type LinkKey = (typeof NAV_LINKS)[number] | "reserve";
 
 // Spielzeug is temporarily hidden from the nav (and the homepage section) —
 // remove it from this list to bring it back. Everything else about it stays
@@ -16,7 +16,7 @@ const ALL_LINK_KEYS = [...NAV_LINKS, "reserve"] as const;
 const HIDDEN_NAV_LINKS: ReadonlyArray<(typeof NAV_LINKS)[number]> = ["spielzeug"];
 const VISIBLE_NAV_LINKS = NAV_LINKS.filter((key) => !HIDDEN_NAV_LINKS.includes(key));
 
-const LINK_HREFS: Record<(typeof ALL_LINK_KEYS)[number], string> = {
+const LINK_HREFS: Record<LinkKey, string> = {
   about: "#about",
   cocktails: "#cocktails",
   gallery: "#gallery",
@@ -28,8 +28,8 @@ const LINK_HREFS: Record<(typeof ALL_LINK_KEYS)[number], string> = {
 
 const ANCHOR_KEYS = ["about", "cocktails", "gallery", "nights", "reserve"] as const;
 
-function NavLink({ linkKey, href, children, onClick, className = "" }: { linkKey: (typeof ALL_LINK_KEYS)[number]; href: string; children: React.ReactNode; onClick?: () => void; className?: string }) {
-  const isAnchor = ANCHOR_KEYS.includes(linkKey as any);
+function NavLink({ linkKey, href, children, onClick, className = "" }: { linkKey: LinkKey; href: string; children: React.ReactNode; onClick?: () => void; className?: string }) {
+  const isAnchor = (ANCHOR_KEYS as readonly string[]).includes(linkKey);
   const baseClass = "relative text-xs tracking-[0.2em] uppercase text-smoke hover:text-gold-bright transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full";
   if (isAnchor) {
     return (

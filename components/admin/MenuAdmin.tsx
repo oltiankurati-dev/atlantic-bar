@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 type Category =
@@ -51,23 +51,24 @@ export default function MenuAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  async function load() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/menu", { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t.admin.menu.errorLoadFailed);
-      setItems(data.items ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.admin.menu.errorLoadFailed);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const load = useCallback(
+    () =>
+      fetch("/api/admin/menu", { cache: "no-store" })
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? t.admin.menu.errorLoadFailed);
+          setItems(data.items ?? []);
+        })
+        .catch((err) =>
+          setError(err instanceof Error ? err.message : t.admin.menu.errorLoadFailed)
+        )
+        .finally(() => setLoading(false)),
+    [t]
+  );
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   function startEdit(item: MenuItem) {
     setEditingId(item.id);

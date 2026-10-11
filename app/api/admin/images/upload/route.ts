@@ -4,6 +4,7 @@ import { getAdminSession } from "@/lib/adminAuth";
 import { getDb } from "@/lib/firebaseAdmin";
 import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import { SITE_IMAGE_DEFAULTS } from "@/lib/siteContent";
+import { isOwnKey } from "@/lib/validation";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
@@ -12,11 +13,12 @@ export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
-  const form = await req.formData();
+  const form = await req.formData().catch(() => null);
+  if (!form) return NextResponse.json({ error: "Invalid upload." }, { status: 400 });
   const key = String(form.get("key") ?? "");
   const file = form.get("file");
 
-  if (!(key in SITE_IMAGE_DEFAULTS)) {
+  if (!isOwnKey(SITE_IMAGE_DEFAULTS, key)) {
     return NextResponse.json({ error: "Invalid image key." }, { status: 400 });
   }
   if (!(file instanceof File)) {

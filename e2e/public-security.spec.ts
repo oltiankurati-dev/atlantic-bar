@@ -1,4 +1,4 @@
-import { test, expect, request } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 test.describe("Public pages render", () => {
   test("homepage loads with key sections, no console errors", async ({ page }) => {
@@ -151,6 +151,33 @@ test.describe("API authorization enforcement", () => {
   test("PUT /api/site-content is rejected (write-protected public route)", async ({ request: req }) => {
     const res = await req.put("/api/site-content", { data: { hero: "http://evil.example/x.png" } });
     expect(res.status()).toBe(405);
+  });
+
+  test("cross-origin writes to the API are rejected (CSRF defense)", async ({ request: req }) => {
+    const res = await req.post("/api/auth/session", {
+      headers: { Origin: "https://evil.example" },
+      data: { idToken: "x" },
+    });
+    expect(res.status()).toBe(403);
+
+    const del = await req.delete("/api/admin/reservations/abc", {
+      headers: { Origin: "https://evil.example" },
+    });
+    expect(del.status()).toBe(403);
+  });
+
+  test("same-origin writes still reach the route handler", async ({ request: req, baseURL }) => {
+    const res = await req.post("/api/auth/session", {
+      headers: { Origin: new URL(baseURL!).origin },
+      data: {},
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test("public site-content only exposes known image keys (no inherited props)", async ({ request: req }) => {
+    const body = await (await req.get("/api/site-content")).json();
+    expect(Object.keys(body.images)).not.toContain("constructor");
+    expect(Object.keys(body.images)).toContain("hero");
   });
 
   test("/api/me without session -> user: null (no crash)", async ({ request: req }) => {

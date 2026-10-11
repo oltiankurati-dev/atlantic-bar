@@ -203,7 +203,7 @@ test.describe.serial("Authenticated end-to-end + admin flow (real backend, clean
     const res = await page.request.get("/api/admin/reservations");
     expect(res.status()).toBe(200);
     const body = await res.json();
-    const found = body.reservations.find((r: any) => r.id === created.reservationId);
+    const found = body.reservations.find((r: { id: string; name?: string; status?: string }) => r.id === created.reservationId);
     expect(found).toBeTruthy();
     expect(found.name).toBe(RESERVATION_NAME);
   });
@@ -216,7 +216,7 @@ test.describe.serial("Authenticated end-to-end + admin flow (real backend, clean
 
     const listRes = await page.request.get("/api/admin/reservations");
     const body = await listRes.json();
-    const found = body.reservations.find((r: any) => r.id === created.reservationId);
+    const found = body.reservations.find((r: { id: string; name?: string; status?: string }) => r.id === created.reservationId);
     expect(found.status).toBe("confirmed");
   });
 
@@ -237,14 +237,14 @@ test.describe.serial("Authenticated end-to-end + admin flow (real backend, clean
 
     const publicRes = await page.request.get("/api/gallery");
     const publicBody = await publicRes.json();
-    expect(publicBody.items.some((i: any) => i.id === created.galleryId)).toBe(true);
+    expect(publicBody.items.some((i: { id: string }) => i.id === created.galleryId)).toBe(true);
 
     const delRes = await page.request.delete(`/api/admin/gallery/${created.galleryId}`);
     expect(delRes.status()).toBe(200);
 
     const publicResAfter = await page.request.get("/api/gallery");
     const publicBodyAfter = await publicResAfter.json();
-    expect(publicBodyAfter.items.some((i: any) => i.id === created.galleryId)).toBe(false);
+    expect(publicBodyAfter.items.some((i: { id: string }) => i.id === created.galleryId)).toBe(false);
     created.galleryId = "";
   });
 
@@ -253,6 +253,13 @@ test.describe.serial("Authenticated end-to-end + admin flow (real backend, clean
       data: { label: "bad", imageUrl: "not-a-url-at-all", span: "normal", order: 1 },
     });
     expect(res.status()).toBe(400);
+
+    for (const imageUrl of ["javascript:alert(1)", "data:image/png;base64,AAAA", "http://example.com/x.png"]) {
+      const r = await page.request.post("/api/admin/gallery", {
+        data: { label: "bad", imageUrl, span: "normal", order: 1 },
+      });
+      expect(r.status(), imageUrl).toBe(400);
+    }
   });
 
   test("image upload endpoint rejects disallowed mime type and oversized file", async () => {

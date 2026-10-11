@@ -33,24 +33,29 @@ Submitting the reservation form now hits `app/api/reservation/route.ts`, which:
 
 1. Validates the input server-side (`zod`)
 2. Saves the reservation to a Firestore `reservations` collection via the Firebase Admin SDK
-3. Sends you an email notification via [Resend](https://resend.com)
+3. Emails your inbox (and the guest, if their account email is verified) via Gmail SMTP
 
 Nothing is written from the browser directly — `firestore.rules` denies all
-client read/write on `reservations`, so guest data only ever passes through
+client read/write on every collection, so guest data only ever passes through
 your server.
+
+## Security notes
+
+- All admin API routes check `users/{uid}.role === "admin"` server-side.
+- `proxy.ts` rejects cross-origin POST/PATCH/PUT/DELETE to `/api/*` (CSRF defense-in-depth on top of the SameSite=Lax session cookie).
+- Admin-entered image URLs must be absolute `https://` URLs.
+- Reservation confirmation emails go only to verified account emails, so the form can't be used to mail arbitrary addresses.
 
 **Setup:**
 
 1. Create a Firebase project (or reuse an existing one) and enable Firestore.
 2. Firebase Console → Project Settings → Service Accounts → *Generate new private key*. This gives you `project_id`, `client_email`, and `private_key`.
 3. Deploy `firestore.rules` to that project (`firebase deploy --only firestore:rules`, or paste it into the Firestore Rules tab in the console).
-4. Sign up at [resend.com](https://resend.com), verify a sending domain (or use their `onboarding@resend.dev` test address while developing), and grab an API key.
+4. On the Gmail account that should send mail, turn on 2-Step Verification and create an App Password at https://myaccount.google.com/apppasswords.
 5. Copy `.env.local.example` to `.env.local` and fill in all the values.
 6. When deploying (e.g. on Vercel), add the same variables under Project Settings → Environment Variables.
 
-`npm install` will pull in the new dependencies (`firebase-admin`, `resend`, `zod`).
-
-To view reservations, use the Firebase Console's Firestore data tab — or I can build a small admin page for you later if you want to manage them from the site itself.
+Reservations, menu, gallery, opening hours and site images are managed at `/admin/dashboard` (admin accounts only — see `.env.local.example` for how to grant the role).
 
 ## The 3D intro
 
