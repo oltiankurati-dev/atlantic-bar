@@ -2,21 +2,8 @@ import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminSession } from "@/lib/adminAuth";
 import { getDb } from "@/lib/firebaseAdmin";
-import { getAllDefaultMenuItems } from "@/lib/defaultMenu";
-
-function slug(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function makeId(category: string, name: string) {
-  return `${slug(category)}-${slug(name)}`;
-}
+import { invalidateMenuCache } from "@/lib/menuServer";
+import { getAllDefaultMenuItems, menuItemId } from "@/lib/defaultMenu";
 
 /**
  * POST /api/admin/menu/seed
@@ -57,7 +44,7 @@ export async function POST() {
     const written: string[] = [];
 
     for (const item of items) {
-      const id = makeId(item.category, item.name);
+      const id = menuItemId(item.category, item.name);
       batch.set(col.doc(id), {
         category: item.category,
         name: item.name,
@@ -80,6 +67,7 @@ export async function POST() {
     }
     if (ops > 0) await batch.commit();
 
+    invalidateMenuCache();
     return NextResponse.json({
       ok: true,
       deleted: existing.size,

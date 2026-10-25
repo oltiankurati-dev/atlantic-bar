@@ -6,6 +6,8 @@ import { useState, type FormEvent } from "react";
 import { useSiteImages } from "@/app/context/SiteImagesContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { useBusinessHours } from "@/app/context/BusinessHoursContext";
+import { dayKeyOf, todayInBerlin } from "@/lib/businessHours";
 import Link from "next/link";
 
 export default function Reservation() {
@@ -15,12 +17,14 @@ export default function Reservation() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hours = useBusinessHours();
 
-  // YYYY-MM-DD in the guest's own timezone, for the date picker's lower bound.
-  const now = new Date();
-  const todayLocal = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
+  // The venue's today, matching the server's check.
+  const todayLocal = todayInBerlin();
+  const closedDayMessage =
+    locale === "de"
+      ? "An diesem Tag haben wir geschlossen. Bitte wählen Sie ein anderes Datum."
+      : "We're closed on that day. Please choose another date.";
 
   const FIELDS: { key: "name" | "date" | "guests"; label: string }[] = [
     { key: "name", label: t.reservation.fields.name },
@@ -74,7 +78,7 @@ export default function Reservation() {
       <div className="absolute inset-0">
         <Image
           src={siteImages.reservation}
-          alt="Warm firelit table at Atlantic Lounge Bar"
+          alt=""
           fill
           unoptimized
           className="object-cover"
@@ -143,6 +147,16 @@ export default function Reservation() {
                   max={f.key === "guests" ? 50 : undefined}
                   maxLength={f.key === "name" ? 100 : undefined}
                   placeholder={f.key === "name" ? t.reservation.namePlaceholder : undefined}
+                  onChange={
+                    f.key === "date"
+                      ? (e) => {
+                          const value = e.currentTarget.value;
+                          e.currentTarget.setCustomValidity(
+                            value && hours[dayKeyOf(value)]?.closed ? closedDayMessage : ""
+                          );
+                        }
+                      : undefined
+                  }
                   className="mt-2 w-full bg-transparent border-b border-cream/25 focus:border-gold py-2 text-cream outline-none transition-colors placeholder:text-smoke/50"
                 />
               </label>

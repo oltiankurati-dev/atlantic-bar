@@ -41,13 +41,13 @@ test.describe("Language default + legal pages", () => {
   test("cookie banner shows on first visit and can be dismissed, stays dismissed", async ({ page }) => {
     await page.goto("/");
     await page.waitForTimeout(2000); // let the reduced-motion intro auto-dismiss
-    const banner = page.getByRole("dialog");
+    const banner = page.getByRole("dialog", { name: "Cookies" });
     await expect(banner).toBeVisible();
     await banner.getByRole("button").click();
     await expect(banner).toBeHidden();
 
     await page.reload();
-    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page.getByRole("dialog", { name: "Cookies" })).toBeHidden();
   });
 
   test("toggling to English updates admin-portal-shared strings via translations (sanity: nav)", async ({ page }) => {

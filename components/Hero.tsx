@@ -10,7 +10,7 @@ export default function Hero() {
   const siteImages = useSiteImages();
 
   return (
-    <section id="top" className="relative h-svh min-h-155 w-full overflow-hidden">
+    <section id="top" className="relative min-h-svh w-full overflow-hidden">
       <motion.div
         initial={{ scale: 1.18 }}
         animate={{ scale: 1 }}
@@ -19,7 +19,7 @@ export default function Hero() {
       >
         <Image
           src={siteImages.hero}
-          alt="Atlantic Lounge Bar"
+          alt=""
           fill
           priority
           unoptimized
@@ -30,7 +30,7 @@ export default function Hero() {
       <div className="absolute inset-0 bg-linear-to-b from-obsidian/80 via-obsidian/55 to-obsidian" />
       <div className="absolute inset-0 bg-linear-to-t from-obsidian via-transparent to-obsidian/40" />
 
-      <div className="relative z-10 h-full w-full max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-2 items-center pt-24 pb-16 px-6 lg:px-12 overflow-y-auto">
+      <div className="relative z-10 min-h-svh w-full max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-2 items-center pt-24 pb-16 px-6 lg:px-12">
         {/* LEFT: Logo */}
         <div className="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gold/20 pb-10 md:pb-0 md:pr-8 lg:pr-12">
           <motion.div
@@ -53,14 +53,14 @@ export default function Hero() {
 
         {/* RIGHT: Re-opening + offers */}
         <div className="flex flex-col items-center justify-center text-center pt-10 md:pt-0 md:pl-8 lg:pl-12">
-          <motion.h2
+          <motion.h1
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, delay: 0.6 }}
             className="text-2xl sm:text-3xl lg:text-4xl font-bold uppercase tracking-[0.15em] text-gold-bright mb-6"
           >
             {t.hero.reopenTitle}
-          </motion.h2>
+          </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, x: 20 }}
@@ -110,7 +110,7 @@ export default function Hero() {
               <li>{t.hero.offer3}</li>
             </ul>
             <p className="text-xs text-cream/70 font-semibold mt-6">{t.hero.offersMore}</p>
-            <p className="text-[11px] md:text-xs font-serif-alt italic text-gold-faded mt-3 leading-relaxed">
+            <p className="text-[11px] md:text-xs font-serif-alt italic text-gold/80 mt-3 leading-relaxed">
               {t.hero.offersFooter}
             </p>
           </motion.div>

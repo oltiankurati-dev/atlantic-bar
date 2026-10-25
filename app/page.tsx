@@ -25,8 +25,10 @@ export default function Home() {
     <>
       {!introDone && <IntroExperience onFinish={() => setIntroDone(true)} />}
       <CursorGlow />
+      {/* inert: keyboard and screen readers can't reach the page behind the intro */}
+      <div inert={!introDone} className="contents">
       <Nav />
-      <main>
+      <main id="main">
         <Hero />
         <Marquee />
         <About />
@@ -38,6 +40,7 @@ export default function Home() {
         {SHOW_SPIELZEUG && <Spielzeug />}
       </main>
       <Footer />
+      </div>
     </>
   );
 }

@@ -12,7 +12,7 @@ test.describe("Public pages render", () => {
     expect(res?.status()).toBe(200);
 
     await expect(page.locator("#reserve")).toBeVisible();
-    await expect(page.locator('a[href="#reserve"]').first()).toBeVisible();
+    await expect(page.locator('a[href$="#reserve"]').first()).toBeVisible();
 
     const ignorable = /favicon|ERR_BLOCKED_BY_CLIENT|net::ERR_ABORTED/i;
     const real = consoleErrors.filter((e) => !ignorable.test(e));
@@ -32,8 +32,9 @@ test.describe("Public pages render", () => {
   test("BUG FIX REGRESSION: intro does not replay on a second visit within the same session", async ({ page }) => {
     await page.goto("/");
     // First visit: intro plays and must be skippable.
-    const skipButton = page.locator("button", { hasText: /skip|überspringen/i });
-    await skipButton.waitFor({ state: "visible", timeout: 5000 });
+    const skipButton = page.getByRole("button", { name: /skip|überspringen/i });
+    // The 3D scene is slow under headless software rendering.
+    await skipButton.waitFor({ state: "visible", timeout: 15000 });
     await skipButton.click();
     await skipButton.waitFor({ state: "hidden", timeout: 3000 });
     await page.waitForTimeout(600);

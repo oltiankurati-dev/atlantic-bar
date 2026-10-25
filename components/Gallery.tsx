@@ -44,6 +44,17 @@ const DEFAULT_SHOTS_EN: Shot[] = [
   { label: "The Pour", imageUrl: PHOTOS.whiskeyWoodTable, span: "normal" },
 ];
 
+// Admin labels are sometimes just "3" or "party" — not useful to a screen
+// reader on their own, so give short ones some context.
+function galleryAlt(label: string, index: number, locale: "de" | "en") {
+  const clean = label.trim();
+  const place = "Atlantic Lounge Bar";
+  if (!clean || /^\d+$/.test(clean)) {
+    return locale === "de" ? `${place} – Galeriebild ${index + 1}` : `${place} – gallery photo ${index + 1}`;
+  }
+  return `${clean} – ${place}`;
+}
+
 export default function Gallery() {
   const { locale, t } = useLanguage();
   const DEFAULT_SHOTS = locale === "de" ? DEFAULT_SHOTS_DE : DEFAULT_SHOTS_EN;
@@ -51,7 +62,7 @@ export default function Gallery() {
 
   useEffect(() => {
     fetch("/api/gallery", { cache: "no-store" })
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error())))
       .then((data) => {
         if (Array.isArray(data.items) && data.items.length > 0) {
           setShots(data.items);
@@ -82,7 +93,7 @@ export default function Gallery() {
             >
               <Image
                 src={s.imageUrl}
-                alt={s.label}
+                alt={galleryAlt(s.label, i, locale)}
                 fill
                 unoptimized
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
@@ -90,7 +101,7 @@ export default function Gallery() {
               />
               <div className="absolute inset-0 bg-linear-to-t from-obsidian/85 via-obsidian/10 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-500" />
               <div className="absolute inset-0 border border-transparent group-hover:border-gold/50 transition-colors duration-500" />
-              <p className="absolute bottom-3 left-4 font-display text-xs sm:text-sm tracking-[0.2em] uppercase text-cream translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+              <p className="absolute bottom-3 left-4 font-display text-xs sm:text-sm tracking-[0.2em] uppercase text-cream md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all duration-500">
                 {s.label}
               </p>
             </motion.div>

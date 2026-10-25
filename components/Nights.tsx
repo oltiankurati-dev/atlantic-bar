@@ -15,7 +15,7 @@ export default function Nights() {
       <div className="absolute inset-0">
         <Image
           src={siteImages.nights}
-          alt="Warm fireside lounge seating at Atlantic Lounge Bar"
+          alt=""
           fill
           unoptimized
           className="object-cover"

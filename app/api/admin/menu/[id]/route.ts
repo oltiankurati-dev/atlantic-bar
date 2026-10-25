@@ -2,18 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminSession } from "@/lib/adminAuth";
 import { getDb } from "@/lib/firebaseAdmin";
-import { DEFAULT_ITEMS, type MenuCategory } from "@/lib/defaultMenu";
+import { invalidateMenuCache } from "@/lib/menuServer";
+import { isDefaultMenuItemId } from "@/lib/defaultMenu";
 import { isSafeDocId, menuItemSchema } from "@/lib/validation";
-
-const CATEGORIES: MenuCategory[] = [
-  "signature",
-  "classics",
-  "spirits",
-  "wine",
-  "champagne",
-  "nonAlcoholic",
-  "barSnacks",
-];
 
 export async function PATCH(
   req: NextRequest,
@@ -48,6 +39,7 @@ export async function PATCH(
     { merge: true }
   );
 
+  invalidateMenuCache();
   return NextResponse.json({ ok: true });
 }
 
@@ -60,12 +52,7 @@ export async function DELETE(
 
   const { id } = await params;
   if (!isSafeDocId(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
-  const isDefault = CATEGORIES.some((category) =>
-    DEFAULT_ITEMS[category].some((item) => {
-      const slug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      return `${slug(category)}-${slug(item.name)}` === id;
-    })
-  );
+  const isDefault = isDefaultMenuItemId(id);
 
   if (isDefault) {
     await getDb().collection("menuItems").doc(id).set(
@@ -76,5 +63,6 @@ export async function DELETE(
     await getDb().collection("menuItems").doc(id).delete();
   }
 
+  invalidateMenuCache();
   return NextResponse.json({ ok: true });
 }

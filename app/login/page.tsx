@@ -118,7 +118,7 @@ export default function CustomerLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-obsidian flex items-center justify-center px-6 py-16">
+    <main id="main" className="min-h-screen bg-obsidian flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm bg-charcoal/70 border border-gold/25 p-8 md:p-10">
         <p className="font-script text-2xl text-gold-bright mb-1">Atlantic Lounge Bar</p>
         <h1 className="font-display text-2xl uppercase tracking-wide text-cream mb-2">

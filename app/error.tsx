@@ -1,0 +1,18 @@
+"use client";
+
+import { useEffect } from "react";
+import StatusScreen from "@/components/status/StatusScreen";
+
+export default function Error({
+  error,
+  retry,
+}: {
+  error: Error & { digest?: string };
+  retry: () => void;
+}) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return <StatusScreen kind="error" onRetry={retry} />;
+}

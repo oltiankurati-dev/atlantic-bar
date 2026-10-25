@@ -12,7 +12,7 @@ export default function ImpressumPage() {
   return (
     <>
       <Nav />
-      <main className="min-h-screen bg-obsidian pt-32 pb-24 px-6 md:px-10">
+      <main id="main" className="min-h-screen bg-obsidian pt-32 pb-24 px-6 md:px-10">
         <div className="mx-auto max-w-3xl">
           <p className="font-script text-3xl text-gold-bright">Atlantic Lounge Bar</p>
           <h1 className="font-display text-3xl uppercase tracking-wide text-cream mt-1 mb-10">
