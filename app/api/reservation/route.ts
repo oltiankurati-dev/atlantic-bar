@@ -3,6 +3,7 @@ import { z } from "zod";
 import { FieldValue } from "firebase-admin/firestore";
 import { getDb, getAdminAuth } from "@/lib/firebaseAdmin";
 import { getMailer, getMailFrom, isMailerConfigured } from "@/lib/mailer";
+import { dayKeyOf, getBusinessHours, todayInBerlin } from "@/lib/businessHoursServer";
 
 // Basic in-memory rate limit (per server instance). Good enough to stop
 // accidental double-submits and light abuse; not a substitute for a WAF.
@@ -23,16 +24,21 @@ function pruneExpired(map: Map<string, number>) {
   }
 }
 
-// <input type="date"> always submits YYYY-MM-DD. Allow "yesterday" as slack
-// for guests in a timezone behind the server's UTC clock.
+// <input type="date"> always submits YYYY-MM-DD. "Today" is the venue's
+// today (Berlin), so past dates are rejected whatever the guest's timezone.
 function isBookableDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const day = Date.parse(`${value}T00:00:00Z`);
   if (Number.isNaN(day) || new Date(day).toISOString().slice(0, 10) !== value) return false;
-  const todayUtc = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  const today = Date.parse(`${todayInBerlin()}T00:00:00Z`);
   const dayMs = 24 * 60 * 60 * 1000;
-  return day >= todayUtc - dayMs && day <= todayUtc + MAX_BOOKING_AHEAD_DAYS * dayMs;
+  return day >= today && day <= today + MAX_BOOKING_AHEAD_DAYS * dayMs;
 }
+
+const CLOSED_DAY_ERROR = {
+  de: "An diesem Tag haben wir geschlossen. Bitte wählen Sie ein anderes Datum.",
+  en: "We're closed on that day. Please choose another date.",
+} as const;
 
 const ReservationSchema = z.object({
   // No control characters — the name ends up in email subjects and bodies.
@@ -133,15 +139,29 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Claim the slot before any await below. Recording it only after the
+  // emails were sent let a burst of parallel requests all pass the check.
+  const claimedAt = Date.now();
+  recentSubmissionsByUid.set(decoded.uid, claimedAt);
+  recentSubmissionsByIp.set(ip, claimedAt);
+  // A rejected form (typo, closed day, server error) shouldn't lock the
+  // guest out for a minute — give the slot back.
+  const releaseSlot = () => {
+    if (recentSubmissionsByUid.get(decoded.uid) === claimedAt) recentSubmissionsByUid.delete(decoded.uid);
+    if (recentSubmissionsByIp.get(ip) === claimedAt) recentSubmissionsByIp.delete(ip);
+  };
+
   let body: unknown;
   try {
     body = await req.json();
   } catch {
+    releaseSlot();
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
   const parsed = ReservationSchema.safeParse(body);
   if (!parsed.success) {
+    releaseSlot();
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "Invalid input." },
       { status: 400 }
@@ -150,6 +170,12 @@ export async function POST(req: NextRequest) {
   const { name, date, guests, locale } = parsed.data;
 
   try {
+    const hours = await getBusinessHours();
+    if (hours[dayKeyOf(date)].closed) {
+      releaseSlot();
+      return NextResponse.json({ error: CLOSED_DAY_ERROR[locale] }, { status: 400 });
+    }
+
     const db = getDb();
     const docRef = await db.collection("reservations").add({
       name,
@@ -204,10 +230,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    recentSubmissionsByIp.set(ip, Date.now());
-    recentSubmissionsByUid.set(decoded.uid, Date.now());
     return NextResponse.json({ ok: true, id: docRef.id }, { status: 201 });
   } catch (err) {
+    releaseSlot();
     console.error("Reservation submission failed:", err);
     return NextResponse.json(
       { error: "Something went wrong saving your reservation. Please try again." },

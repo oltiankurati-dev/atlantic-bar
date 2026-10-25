@@ -17,6 +17,24 @@ export const DAY_ORDER: DayKey[] = [
   "sunday",
 ];
 
+/** The venue is in Germany, so "today" means today in Berlin. YYYY-MM-DD. */
+export function todayInBerlin(): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/** Weekday of a YYYY-MM-DD date string. */
+export function dayKeyOf(date: string): DayKey {
+  // getUTCDay: 0 = Sunday. DAY_ORDER starts on Monday.
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return DAY_ORDER[(weekday + 6) % 7];
+}
+
 export interface DayHours {
   /** 24-hour "HH:mm", ignored when closed is true. */
   open: string;
@@ -26,6 +44,21 @@ export interface DayHours {
 }
 
 export type BusinessHours = Record<DayKey, DayHours>;
+
+const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** A well-formed day entry: closed flag plus HH:mm open/close times. */
+export function isValidDayHours(value: unknown): value is DayHours {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.closed === "boolean" &&
+    typeof v.open === "string" &&
+    typeof v.close === "string" &&
+    TIME_RE.test(v.open) &&
+    TIME_RE.test(v.close)
+  );
+}
 
 // Matches the venue's real Google Business listing.
 export const BUSINESS_HOURS_DEFAULTS: BusinessHours = {

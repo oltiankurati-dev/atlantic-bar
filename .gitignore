@@ -10,3 +10,8 @@ out
 # leaking production secrets to this repo's public history.
 *.zip
 .env*
+
+# Playwright / QA output
+test-results/
+playwright-report/
+_qa_cleanup_report.json

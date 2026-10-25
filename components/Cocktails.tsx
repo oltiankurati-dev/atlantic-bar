@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { PHOTOS } from "@/lib/images";
+import { getAllDefaultMenuItems } from "@/lib/defaultMenu";
 import SectionHeading from "./SectionHeading";
 import { useLanguage } from "@/app/context/LanguageContext";
 import Link from "next/link";
@@ -16,82 +16,25 @@ interface Drink {
   imageUrl: string;
 }
 
-// Shown until (or unless) the client has added their own items in the
-// admin dashboard — the site never shows an empty menu.
-const DEFAULT_DRINKS_DE: Drink[] = [
-  {
-    name: "Gilded Old Fashioned",
-    note: "Bourbon, Bitters, geflämmtes Orangenöl, ein einzelner Eisball.",
-    price: "18",
-    imageUrl: PHOTOS.whiskeyIce,
-  },
-  {
-    name: "Atlantic Amber",
-    note: "Gereifter Rum, Honig, geräucherter Zimt, langsam bernsteinfarben serviert.",
-    price: "20",
-    imageUrl: PHOTOS.heroPour,
-  },
-  {
-    name: "Velvet Negroni",
-    note: "Im Fass gereifter Gin, süßer Wermut, bittere Orangenschale.",
-    price: "19",
-    imageUrl: PHOTOS.whiskeyOrange,
-  },
-  {
-    name: "Midnight Sour",
-    note: "Roggenwhiskey, Brombeere, Zitrone, Eiweiß, Absinth-Nebel.",
-    price: "21",
-    imageUrl: PHOTOS.whiskeyBrown,
-  },
-];
-
-const DEFAULT_DRINKS_EN: Drink[] = [
-  {
-    name: "Gilded Old Fashioned",
-    note: "Bourbon, bitters, torched orange oil, single ice sphere.",
-    price: "18",
-    imageUrl: PHOTOS.whiskeyIce,
-  },
-  {
-    name: "Atlantic Amber",
-    note: "Aged rum, honey, smoked cinnamon, a slow amber pour.",
-    price: "20",
-    imageUrl: PHOTOS.heroPour,
-  },
-  {
-    name: "Velvet Negroni",
-    note: "Barrel-rested gin, sweet vermouth, bitter orange peel.",
-    price: "19",
-    imageUrl: PHOTOS.whiskeyOrange,
-  },
-  {
-    name: "Midnight Sour",
-    note: "Rye whiskey, blackberry, lemon, egg white, absinthe mist.",
-    price: "21",
-    imageUrl: PHOTOS.whiskeyBrown,
-  },
-];
+// Shown until the menu API answers, and kept if it fails — the same
+// built-in menu the API falls back to, so the site never shows an empty
+// or made-up menu.
+const DEFAULT_DRINKS: Drink[] = getAllDefaultMenuItems();
 
 export default function Cocktails() {
-  const { locale, t } = useLanguage();
-  const DEFAULT_DRINKS = locale === "de" ? DEFAULT_DRINKS_DE : DEFAULT_DRINKS_EN;
+  const { t } = useLanguage();
   const [drinks, setDrinks] = useState<Drink[]>(DEFAULT_DRINKS);
 
   useEffect(() => {
     fetch("/api/menu", { cache: "no-store" })
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error())))
       .then((data) => {
-        if (Array.isArray(data.items) && data.items.length > 0) {
-          setDrinks(data.items);
-        } else {
-          setDrinks(DEFAULT_DRINKS);
-        }
+        if (Array.isArray(data.items) && data.items.length > 0) setDrinks(data.items);
       })
       .catch(() => {
         // Keep the defaults on any failure — never show a broken/empty menu.
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale]);
+  }, []);
 
   return (
     <section id="cocktails" className="relative bg-charcoal py-28 md:py-36">
@@ -135,7 +78,7 @@ export default function Cocktails() {
               <div className="p-7">
                 <div className="flex items-start justify-between gap-4">
                   <h3 className="font-display text-xl text-cream tracking-wide">{d.name}</h3>
-                  <span className="font-display text-gold-bright text-lg shrink-0">${d.price}</span>
+                  <span className="font-display text-gold-bright text-lg shrink-0">€{d.price}</span>
                 </div>
                 <p className="text-smoke text-sm mt-3 leading-relaxed">{d.note}</p>
               </div>

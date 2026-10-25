@@ -40,6 +40,7 @@ export default function CookieBanner() {
   return (
     <div
       role="dialog"
+      aria-label="Cookies"
       aria-live="polite"
       className="fixed inset-x-0 bottom-0 z-[90] border-t border-gold/25 bg-obsidian/95 backdrop-blur px-6 py-5 md:px-10"
     >

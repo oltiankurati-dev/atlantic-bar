@@ -36,12 +36,12 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <main className="min-h-screen bg-obsidian" />;
+    return <main id="main" className="min-h-screen bg-obsidian" />;
   }
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-obsidian flex items-center justify-center px-6">
+      <main id="main" className="min-h-screen bg-obsidian flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-cream mb-5">{t.profile.signInPrompt}</p>
           <Link href="/login" className="border border-gold bg-gold px-8 py-3 text-xs tracking-[0.2em] uppercase text-obsidian">
@@ -55,7 +55,7 @@ export default function ProfilePage() {
   return (
     <>
       <Nav />
-      <main className="min-h-screen bg-obsidian pt-32 pb-24 px-6 md:px-10">
+      <main id="main" className="min-h-screen bg-obsidian pt-32 pb-24 px-6 md:px-10">
         <div className="mx-auto max-w-4xl">
           <p className="font-script text-3xl text-gold-bright">Atlantic Lounge Bar</p>
           <h1 className="font-display text-3xl uppercase tracking-wide text-cream mt-1">{t.profile.heading}</h1>

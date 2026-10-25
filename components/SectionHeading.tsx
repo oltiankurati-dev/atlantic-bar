@@ -7,12 +7,16 @@ export default function SectionHeading({
   title,
   align = "center",
   light = false,
+  as = "h2",
 }: {
   eyebrow: string;
   title: string;
   align?: "center" | "left";
   light?: boolean;
+  /** "h1" on pages where this is the main heading. */
+  as?: "h1" | "h2";
 }) {
+  const Heading = as === "h1" ? motion.h1 : motion.h2;
   return (
     <div className={align === "center" ? "text-center" : "text-left"}>
       <motion.p
@@ -24,7 +28,7 @@ export default function SectionHeading({
       >
         {eyebrow}
       </motion.p>
-      <motion.h2
+      <Heading
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
@@ -34,7 +38,7 @@ export default function SectionHeading({
         }`}
       >
         {title}
-      </motion.h2>
+      </Heading>
       <motion.div
         initial={{ scaleX: 0 }}
         whileInView={{ scaleX: 1 }}

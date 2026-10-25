@@ -9,6 +9,50 @@ export type MenuCategory =
   | "nonAlcoholic"
   | "barSnacks";
 
+export const MENU_CATEGORIES = [
+  "signature",
+  "classics",
+  "spirits",
+  "wine",
+  "champagne",
+  "nonAlcoholic",
+  "barSnacks",
+] as const satisfies readonly MenuCategory[];
+
+function slug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** Firestore doc id for a menu item, e.g. "wine-rose" for Rosé. */
+export function menuItemId(category: string, name: string) {
+  return `${slug(category)}-${slug(name)}`;
+}
+
+/**
+ * The id older code produced, which dropped accented letters entirely
+ * ("Rosé" -> "ros"). Docs saved under it are still matched so admin edits
+ * made before the fix keep working.
+ */
+export function legacyMenuItemId(category: string, name: string) {
+  const old = (v: string) => v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `${old(category)}-${old(name)}`;
+}
+
+/** True when the id belongs to one of the built-in menu items. */
+export function isDefaultMenuItemId(id: string) {
+  return MENU_CATEGORIES.some((category) =>
+    DEFAULT_ITEMS[category].some(
+      (item) => menuItemId(category, item.name) === id || legacyMenuItemId(category, item.name) === id
+    )
+  );
+}
+
 export interface DefaultMenuItem {
   name: string;
   note: string;
@@ -101,28 +145,7 @@ export const DEFAULT_ITEMS: Record<MenuCategory, DefaultMenuItem[]> = {
 
 /** Flat list for seeding Firestore */
 export function getAllDefaultMenuItems() {
-  const categories: MenuCategory[] = [
-    "signature",
-    "classics",
-    "spirits",
-    "wine",
-    "champagne",
-    "nonAlcoholic",
-    "barSnacks",
-  ];
-  const items: {
-    category: MenuCategory;
-    name: string;
-    note: string;
-    price: string;
-    imageUrl: string;
-    order: number;
-  }[] = [];
-
-  for (const category of categories) {
-    DEFAULT_ITEMS[category].forEach((item, order) => {
-      items.push({ category, ...item, order });
-    });
-  }
-  return items;
+  return MENU_CATEGORIES.flatMap((category) =>
+    DEFAULT_ITEMS[category].map((item, order) => ({ category, ...item, order }))
+  );
 }

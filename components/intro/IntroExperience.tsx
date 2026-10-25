@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Canvas } from "@react-three/fiber";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/app/context/LanguageContext";
 
-const IntroWorld = dynamic(() => import("./IntroWorld"), { ssr: false });
+const IntroScene = dynamic(() => import("./IntroScene"), { ssr: false });
 
 type Phase = "playing" | "wiping" | "done";
 
@@ -16,7 +15,6 @@ export default function IntroExperience({ onFinish }: { onFinish: () => void }) 
   const { t } = useLanguage();
   const [phase, setPhase] = useState<Phase>("playing");
   const [ready, setReady] = useState(false);
-  const [skipVisible, setSkipVisible] = useState(false);
   const [reduced, setReduced] = useState(false);
   const [lowPower, setLowPower] = useState(false);
 
@@ -78,7 +76,14 @@ export default function IntroExperience({ onFinish }: { onFinish: () => void }) 
     }
 
     document.body.style.overflow = "hidden";
-    const skipTimer = window.setTimeout(() => setSkipVisible(true), 1400);
+
+    // Keyboard users can't scroll or drag the scene — let them enter.
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (["Escape", "Enter", " ", "PageDown", "ArrowDown", "End"].includes(e.key)) {
+        e.preventDefault();
+        beginTransition();
+      }
+    };
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -126,6 +131,7 @@ export default function IntroExperience({ onFinish }: { onFinish: () => void }) 
       dragging.current = false;
     };
 
+    window.addEventListener("keydown", onKeyDown);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
@@ -135,7 +141,7 @@ export default function IntroExperience({ onFinish }: { onFinish: () => void }) 
     window.addEventListener("pointerup", onPointerUp);
 
     return () => {
-      window.clearTimeout(skipTimer);
+      window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
@@ -150,16 +156,13 @@ export default function IntroExperience({ onFinish }: { onFinish: () => void }) 
   if (!ready || phase === "done") return null;
 
   return (
-    <div className="fixed inset-0 z-[100]">
-      {!reduced && (
-        <Canvas
-          dpr={lowPower ? [1, 1.3] : [1, 1.8]}
-          gl={{ antialias: true, powerPreference: "high-performance" }}
-          camera={{ fov: 55, near: 0.1, far: 120, position: [0, 0.3, 6] }}
-        >
-          <IntroWorld progressRef={progressRef} dragRef={dragRef} lowPower={lowPower} />
-        </Canvas>
-      )}
+    <div
+      className="fixed inset-0 z-[100]"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t.intro.walkTheRoom}
+    >
+      {!reduced && <IntroScene progressRef={progressRef} dragRef={dragRef} lowPower={lowPower} />}
       {reduced && <div className="absolute inset-0 bg-obsidian" />}
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-obsidian/70 via-transparent to-obsidian/80" />
@@ -183,13 +186,15 @@ export default function IntroExperience({ onFinish }: { onFinish: () => void }) 
       )}
 
       <AnimatePresence>
-        {skipVisible && phase === "playing" && (
+        {phase === "playing" && (
           <motion.button
+            type="button"
+            autoFocus
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={beginTransition}
-            className="absolute bottom-8 right-8 text-[10px] tracking-[0.25em] uppercase text-cream/60 hover:text-gold-bright border border-cream/20 hover:border-gold/60 px-4 py-2 transition-colors"
+            className="absolute bottom-8 right-8 text-[11px] tracking-[0.25em] uppercase text-cream bg-obsidian/70 backdrop-blur hover:text-gold-bright border border-cream/40 hover:border-gold/60 px-5 py-3 transition-colors"
           >
             {t.intro.skipIntro}
           </motion.button>

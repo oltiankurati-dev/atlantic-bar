@@ -56,7 +56,7 @@ export default function SpielzeugPage() {
     <>
       <CursorGlow />
       <Nav />
-      <main className="pt-20">
+      <main id="main" className="pt-20">
         <section className="relative bg-charcoal py-28 md:py-36">
           <div className="absolute inset-0">
             <Image
@@ -75,10 +75,10 @@ export default function SpielzeugPage() {
                 href="/"
                 className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-smoke hover:text-gold-bright transition-colors"
               >
-                <span aria-hidden>←</span> Back to main page
+                <span aria-hidden>←</span> {locale === "de" ? "Zurück zur Startseite" : "Back to main page"}
               </Link>
             </div>
-            <SectionHeading eyebrow={t.spielzeug.eyebrow} title={t.spielzeug.title} align="center" />
+            <SectionHeading eyebrow={t.spielzeug.eyebrow} title={t.spielzeug.title} align="center" as="h1" />
 
             <p className="mt-8 max-w-3xl mx-auto text-center text-smoke leading-relaxed">
               {t.spielzeug.description}

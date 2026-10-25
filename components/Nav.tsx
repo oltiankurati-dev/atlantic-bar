@@ -17,27 +17,18 @@ const HIDDEN_NAV_LINKS: ReadonlyArray<(typeof NAV_LINKS)[number]> = ["spielzeug"
 const VISIBLE_NAV_LINKS = NAV_LINKS.filter((key) => !HIDDEN_NAV_LINKS.includes(key));
 
 const LINK_HREFS: Record<LinkKey, string> = {
-  about: "#about",
-  cocktails: "#cocktails",
-  gallery: "#gallery",
-  nights: "#nights",
+  // "/#…" so the links also work from /menu, /impressum, etc.
+  about: "/#about",
+  cocktails: "/#cocktails",
+  gallery: "/#gallery",
+  nights: "/#nights",
   menu: "/menu",
   spielzeug: "/spielzeug",
-  reserve: "#reserve",
+  reserve: "/#reserve",
 };
 
-const ANCHOR_KEYS = ["about", "cocktails", "gallery", "nights", "reserve"] as const;
-
-function NavLink({ linkKey, href, children, onClick, className = "" }: { linkKey: LinkKey; href: string; children: React.ReactNode; onClick?: () => void; className?: string }) {
-  const isAnchor = (ANCHOR_KEYS as readonly string[]).includes(linkKey);
+function NavLink({ href, children, onClick, className = "" }: { linkKey: LinkKey; href: string; children: React.ReactNode; onClick?: () => void; className?: string }) {
   const baseClass = "relative text-xs tracking-[0.2em] uppercase text-smoke hover:text-gold-bright transition-colors after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full";
-  if (isAnchor) {
-    return (
-      <a href={href} onClick={onClick} className={`${baseClass} ${className}`}>
-        {children}
-      </a>
-    );
-  }
   return (
     <Link href={href} onClick={onClick} className={`${baseClass} ${className}`}>
       {children}
@@ -56,7 +47,7 @@ function LanguageToggle({ className = "" }: { className?: string }) {
     >
       <span className="text-gold-bright">{locale === "de" ? "DE" : "EN"}</span>
       <span className="text-gold/40"> / </span>
-      <span className="text-smoke/50">{locale === "de" ? "EN" : "DE"}</span>
+      <span className="text-smoke/80">{locale === "de" ? "EN" : "DE"}</span>
     </button>
   );
 }
@@ -65,7 +56,15 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { user, loading: authLoading, isAdmin, signOut } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+
+  // Escape closes the mobile menu.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -84,7 +83,7 @@ export default function Nav() {
       }`}
     >
       <nav className="mx-auto max-w-7xl px-6 md:px-10 h-20 flex items-center justify-between gap-8">
-        <a href="#top" className="flex items-center shrink-0 group">
+        <Link href="/" className="flex items-center shrink-0 group">
           <span className="relative block h-10 w-35 sm:h-11 sm:w-40">
             <Image
               src="/atlantic-logo-gold.png"
@@ -95,7 +94,7 @@ export default function Nav() {
               className="object-contain object-left"
             />
           </span>
-        </a>
+        </Link>
 
         <ul className="hidden md:flex items-center gap-8 flex-1 justify-center">
           {VISIBLE_NAV_LINKS.map((linkKey) => (
@@ -106,12 +105,12 @@ export default function Nav() {
         </ul>
 
         <div className="hidden md:flex items-center gap-4 shrink-0">
-          <a
-            href="#reserve"
+          <Link
+            href="/#reserve"
             className="inline-flex items-center border border-gold/60 px-5 py-2 text-xs tracking-[0.2em] uppercase text-gold-bright hover:bg-gold hover:text-obsidian transition-colors duration-300"
           >
             {t.nav.reserve}
-          </a>
+          </Link>
           {!authLoading && (
             user ? (
               <>
@@ -144,7 +143,14 @@ export default function Nav() {
           <LanguageToggle />
         </div>
 
-        <button aria-label="Toggle menu" onClick={() => setOpen((o) => !o)} className="md:hidden text-gold-bright">
+        <button
+          type="button"
+          aria-label={locale === "de" ? "Menü öffnen oder schließen" : "Open or close menu"}
+          aria-expanded={open}
+          aria-controls="mobile-nav"
+          onClick={() => setOpen((o) => !o)}
+          className="md:hidden -mr-2.5 p-2.5 text-gold-bright"
+        >
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
             <path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
@@ -153,6 +159,7 @@ export default function Nav() {
 
       {open && (
         <motion.ul
+          id="mobile-nav"
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
@@ -166,9 +173,9 @@ export default function Nav() {
             </li>
           ))}
           <li>
-            <a href="#reserve" onClick={() => setOpen(false)} className="inline-flex items-center justify-center border border-gold/60 px-5 py-2 text-sm tracking-[0.2em] uppercase text-gold-bright hover:bg-gold hover:text-obsidian transition-colors duration-300">
+            <Link href="/#reserve" onClick={() => setOpen(false)} className="inline-flex items-center justify-center border border-gold/60 px-5 py-2 text-sm tracking-[0.2em] uppercase text-gold-bright hover:bg-gold hover:text-obsidian transition-colors duration-300">
               {t.nav.reserve}
-            </a>
+            </Link>
           </li>
           <li>
             {user ? (

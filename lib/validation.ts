@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { MenuCategory } from "@/lib/defaultMenu";
+import { MENU_CATEGORIES } from "@/lib/defaultMenu";
 
 /**
  * Admin-supplied image URLs are rendered by next/image across the public
@@ -28,16 +28,6 @@ export function isOwnKey<T extends object>(obj: T, key: string): key is Extract<
 export function isSafeDocId(id: string): boolean {
   return /^[A-Za-z0-9_-]{1,128}$/.test(id) && !/^__.*__$/.test(id);
 }
-
-export const MENU_CATEGORIES = [
-  "signature",
-  "classics",
-  "spirits",
-  "wine",
-  "champagne",
-  "nonAlcoholic",
-  "barSnacks",
-] as const satisfies readonly MenuCategory[];
 
 export const menuItemSchema = z.object({
   category: z.enum(MENU_CATEGORIES),

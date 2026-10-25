@@ -84,7 +84,21 @@ export async function POST(req: NextRequest) {
   return res;
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  // Clearing the cookie alone leaves a copied cookie valid for up to 5 days.
+  // Revoking makes every session check (verifySessionCookie with
+  // checkRevoked) reject it. This signs the account out on all devices.
+  const sessionCookie = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (sessionCookie) {
+    try {
+      const auth = getAdminAuth();
+      const decoded = await auth.verifySessionCookie(sessionCookie);
+      await auth.revokeRefreshTokens(decoded.sub);
+    } catch {
+      // Already invalid or expired — nothing to revoke.
+    }
+  }
+
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE_NAME, "", { maxAge: 0, path: "/" });
   return res;
